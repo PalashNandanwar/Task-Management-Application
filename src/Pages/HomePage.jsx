@@ -1,13 +1,16 @@
+/* eslint-disable react/prop-types */
 /* eslint-disable react/no-unescaped-entities */
 // import React from 'react'
 
 import { Link } from "react-router-dom";
 import NavBar from "../Components/NavBar";
+import { MdDashboardCustomize } from "react-icons/md";
 
-const HomePage = () => {
+const HomePage = ({ userData }) => {
     return (
         <>
-            <NavBar />
+            {console.log("userDAta" + userData)}
+            <NavBar userData={userData} />
             <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl w-full space-y-8 text-center bg-white p-10 rounded-lg shadow-xl">
                     <h1 className="text-5xl font-extrabold text-gray-900">Welcome to <span className="text-indigo-600">WorkHive</span></h1>
@@ -54,11 +57,24 @@ const HomePage = () => {
                     </p>
                 </div>
                 <div className="mt-10">
-                    <Link to='/Login'>
-                        <button className="px-8 py-4 bg-indigo-600 text-white rounded-full text-xl font-semibold shadow-lg hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300">
-                            Sign Up
-                        </button>
-                    </Link>
+                    {
+                        userData && userData.firstName === "" ?
+                            <div>
+                                <Link to='/Dashboard'>
+                                    <button className="flex justify-center items-center px-[4rem] py-[2rem] gap-[1rem] text-xl uppercase font-bold">
+                                        Dashboard <span ><MdDashboardCustomize /></span>
+                                    </button>
+                                </Link>
+                            </div>
+                            :
+                            <div>
+                                <Link to='/SignUp'>
+                                    <button className="flex justify-center items-center px-[4rem] py-[2rem] gap-[1rem] text-xl uppercase font-bold text-[#2196f3]">
+                                        Sign Up
+                                    </button>
+                                </Link>
+                            </div>
+                    }
                 </div>
             </div>
 

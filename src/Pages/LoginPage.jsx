@@ -1,9 +1,10 @@
+/* eslint-disable react/prop-types */
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';  // Add useNavigate
 import HomeComponent from '../Components/HomeComponent';
 
-
-const LoginPage = () => {
+const LoginPage = ({ onFormDataSubmit }) => {
+    const navigate = useNavigate(); // Initialize useNavigate
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -11,6 +12,10 @@ const LoginPage = () => {
         email: '',
         password: ''
     });
+
+    console.log(formData);
+
+    onFormDataSubmit(formData);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -20,21 +25,50 @@ const LoginPage = () => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Handle login logic here
-        console.log('Login data:', formData);
+
+        try {
+            const response = await fetch('http://localhost:5000/api/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+            console.log(data);
+
+            if (!response.ok) {
+                alert(`Error: ${data.message}`);
+                return;
+            }
+
+            alert('User registered successfully!');
+            console.log('Success:', data.message);
+
+            // Pass the formData to the parent component
+            // if (onFormDataSubmit) {
+
+            // }
+
+            // Redirect to home page after successful sign-up
+            navigate('/');
+        } catch (error) {
+            console.error('Error during fetch:', error.message);
+            alert('An error occurred. Please try again later.');
+        }
     };
 
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-
             <HomeComponent />
             <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
                 <h2 className="text-center text-3xl font-extrabold text-gray-900">Sign In Page</h2>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="rounded-md shadow-sm -space-y-px  flex flex-col gap-4">
-                        <div className=' flex  gap-2'>
+                    <div className="rounded-md shadow-sm -space-y-px flex flex-col gap-4">
+                        <div className="flex gap-2">
                             <div>
                                 <label htmlFor="firstName" className="sr-only">First Name</label>
                                 <input
@@ -111,17 +145,18 @@ const LoginPage = () => {
                             Login
                         </button>
 
-                        <div className=' mt-8 text-base font-semibold'>
-                            <p>Already Sign in
-                                <Link to='/SignUp'>
-                                    <span className=' text-indigo-600 hover:text-indigo-800'> Click Here</span>.
+                        <div className="mt-8 text-base font-semibold">
+                            <p>
+                                Already Sign in
+                                <Link to="/SignIn">
+                                    <span className="text-indigo-600 hover:text-indigo-800"> Click Here</span>.
                                 </Link>
                             </p>
                         </div>
                     </div>
                 </form>
             </div>
-        </div >
+        </div>
     );
 };
 
