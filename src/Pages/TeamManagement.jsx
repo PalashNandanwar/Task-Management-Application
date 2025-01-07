@@ -12,8 +12,9 @@ const TeamManagement = () => {
 
     return (
         <div>
-            <HomeComponent />
+
             <div className="p-6 bg-gray-100 min-h-screen mt-[4rem]">
+                <HomeComponent />
                 <h1 className="text-3xl font-bold mb-4">Team Management</h1>
                 <div className="bg-white p-6 rounded-lg shadow-md">
                     <table className="w-full border-collapse">

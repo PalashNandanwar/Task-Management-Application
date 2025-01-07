@@ -39,18 +39,60 @@ const LoginPage = ({ onFormDataSubmit }) => {
         });
     };
 
+    // const handleSubmit = async (e) => {
+    //     e.preventDefault();
+
+    //     try {
+    //         const response = await fetch('http://localhost:5000/api/signup', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //             body: JSON.stringify(formData),
+    //         });
+
+    //         const data = await response.json();
+    //         console.log(data);
+
+    //         if (!response.ok) {
+    //             alert(`Error: ${data.message}`);
+    //             return;
+    //         }
+
+    //         alert('User registered successfully!');
+    //         console.log('Success:', data.message);
+
+    //         // Save user data to localStorage after successful signup
+    //         localStorage.setItem(formData.email, JSON.stringify(formData));
+
+    //         // Redirect to home page after successful sign-up
+    //         navigate('/TaskBoard');
+    //     } catch (error) {
+    //         console.error('Error during fetch:', error.message);
+    //         alert('An error occurred. Please try again later.');
+    //     }
+    // };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Check if all required fields are filled
+        if (!formData.firstName || !formData.lastName || !formData.username || !formData.email || !formData.password) {
+            alert('All fields are required.');
+            return;
+        }
+
         try {
+            // Sending the signup request to the backend
             const response = await fetch('http://localhost:5000/api/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(formData), // Sending form data, including password as plain text
             });
 
+            // Parsing response data
             const data = await response.json();
             console.log(data);
 
@@ -65,7 +107,7 @@ const LoginPage = ({ onFormDataSubmit }) => {
             // Save user data to localStorage after successful signup
             localStorage.setItem(formData.email, JSON.stringify(formData));
 
-            // Redirect to home page after successful sign-up
+            // Redirect to the home page after successful sign-up
             navigate('/TaskBoard');
         } catch (error) {
             console.error('Error during fetch:', error.message);

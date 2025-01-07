@@ -14,13 +14,14 @@ const PORT = process.env.PORT || 5000;
 app.use(bodyParser.json());
 app.use(cors());
 
-// Define the user schema
+// Define the user schema with isActive field
 const userSchema = new mongoose.Schema({
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
     username: { type: String, required: true, unique: true, trim: true },
     email: { type: String, required: true, unique: true, trim: true },
     password: { type: String, required: true, minlength: 6 },
+    isActive: { type: Boolean, default: false }, // Add isActive field
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
@@ -80,12 +81,14 @@ app.post('/api/signup', async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
+        // Create a new user document
         const newUser = new User({
             firstName,
             lastName,
             username,
             email,
-            password // Storing plain text password
+            password, // Storing plain text password
+            isActive: true, // Default isActive is false
         });
 
         await newUser.save();
@@ -111,6 +114,10 @@ app.post('/api/signin', async (req, res) => {
             return res.status(400).json({ message: 'Invalid password' });
         }
 
+        // Set the user as active after successful login
+        user.isActive = true;
+        await user.save();
+
         // Generate a JWT token for the authenticated user
         const token = generateAuthToken(user);
 
@@ -122,6 +129,28 @@ app.post('/api/signin', async (req, res) => {
     } catch (error) {
         console.error('Error during login:', error.message);
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Logout Route (to set isActive to false)
+app.post('/api/logout', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        // Find the user by email
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(400).json({ message: 'User not found' });
+        }
+
+        // Set the user as inactive when logged out
+        user.isActive = false;
+        await user.save();
+
+        res.status(200).json({ message: 'User logged out successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Error logging out' });
     }
 });
 

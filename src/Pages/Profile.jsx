@@ -28,6 +28,33 @@ const Profile = ({ userEmail, setUserEmail }) => {
         setIsEditing(false);
     };
 
+    // Function to handle logout
+    const handleLogout = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: userEmail }), // Sending email in the request
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'An error occurred during logout');
+            }
+
+            const data = await response.json();
+            console.log('User logged out successfully:', data);
+
+            // Clear user data and reset userEmail in parent component
+            setUserEmail(null);
+            navigate('/'); // Redirect to the home page
+        } catch (error) {
+            console.error('Error during logout:', error);
+        }
+    };
+
     if (!userData) {
         return <div>Loading...</div>;
     }
@@ -59,11 +86,7 @@ const Profile = ({ userEmail, setUserEmail }) => {
 
                         <div className="flex items-center gap-4">
                             <button
-                                onClick={() => {
-                                    // localStorage.removeItem(userEmail); // Clear user data based on email
-                                    setUserEmail(null); // Reset userEmail in parent component
-                                    navigate('/'); // Redirect to the home page
-                                }}
+                                onClick={handleLogout} // Call handleLogout on logout button click
                                 className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600"
                             >
                                 Logout

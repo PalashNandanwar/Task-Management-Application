@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable react/prop-types */
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -13,26 +14,28 @@ const SignUpPage = ({ onEmailUpdate }) => {
         e.preventDefault();
 
         setLoading(true);
-        setError("");
+        setError(""); // Reset any previous error
 
         try {
+            // Sending the request to /api/signin to authenticate the user (login)
             const response = await fetch("http://localhost:5000/api/signin", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password }), // Sending email and password
             });
 
+            // Check for any errors in the response
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || "An error occurred during sign-up");
+                throw new Error(errorData.message || "An error occurred during sign-in");
             }
 
             const data = await response.json();
-            console.log("User signed up successfully:", data);
+            console.log("User logged in successfully:", data);
 
-            // Pass the email to the parent component
+            // Pass the email to the parent component if required
             if (onEmailUpdate) {
                 onEmailUpdate(email);
             }
@@ -40,7 +43,7 @@ const SignUpPage = ({ onEmailUpdate }) => {
             // Redirect to the home page or dashboard
             navigate("/TaskBoard");
         } catch (error) {
-            console.error("Error during sign up:", error);
+            console.error("Error during sign in:", error);
             setError(error.message || "An error occurred. Please try again later.");
         } finally {
             setLoading(false);
@@ -50,7 +53,7 @@ const SignUpPage = ({ onEmailUpdate }) => {
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
-                <h2 className="text-center text-3xl font-extrabold text-gray-900">Sign Up</h2>
+                <h2 className="text-center text-3xl font-extrabold text-gray-900">Sign In</h2>
                 <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
                     <div className="rounded-md shadow-sm -space-y-px">
                         <div>
@@ -87,16 +90,16 @@ const SignUpPage = ({ onEmailUpdate }) => {
                             disabled={loading}
                             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#2196f3] hover:bg-[#2195f3b1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
-                            {loading ? "Signing up..." : "Sign Up"}
+                            {loading ? "Signing in..." : "Sign In"}
                         </button>
 
                         {error && <p className="mt-2 text-center text-red-600 text-sm">{error}</p>}
 
                         <div className="mt-8 text-base font-semibold">
                             <p>
-                                Already have an account?
+                                Don't have an account?
                                 <Link to="/SignUp">
-                                    <span className="text-indigo-600 hover:text-indigo-800"> Click Here</span> for login.
+                                    <span className="text-indigo-600 hover:text-indigo-800"> Click Here</span> to sign up.
                                 </Link>
                             </p>
                         </div>
