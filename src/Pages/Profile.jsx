@@ -1,48 +1,55 @@
-/* eslint-disable react/prop-types */
-import { useState, useEffect } from "react";
-import HomeComponent from "../Components/HomeComponent";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate from react-router-dom
+import HomeComponent from '../Components/HomeComponent';
 
-const Profile = ({ userEmail, setUserEmail }) => { // Added setUserEmail prop
-    const [userData, setUserData] = useState(null); // Initializing userData as null
+// eslint-disable-next-line react/prop-types
+const Profile = ({ userEmail, setUserEmail }) => {
+    const [userData, setUserData] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [editData, setEditData] = useState(null); // Initializing editData as null
+    const [editData, setEditData] = useState(null);
+    const navigate = useNavigate(); // Initialize useNavigate
 
-    // Fetch user data from localStorage based on userEmail
     useEffect(() => {
-        const storedUserData = localStorage.getItem(userEmail); // Retrieve user data from localStorage using email
+        const storedUserData = localStorage.getItem(userEmail);
         if (storedUserData) {
-            setUserData(JSON.parse(storedUserData)); // Parse and set user data
-            setEditData(JSON.parse(storedUserData)); // Set initial values for editing
+            setUserData(JSON.parse(storedUserData));
+            setEditData(JSON.parse(storedUserData));
         }
-    }, [userEmail]); // Dependency on userEmail so it fetches data when the email changes
+    }, [userEmail]);
 
-    // Handle input changes for editable fields
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setEditData({ ...editData, [name]: value });
     };
 
-    // Save updated profile data
     const saveProfile = () => {
-        setUserData(editData); // Update the userData state
-        localStorage.setItem(userEmail, JSON.stringify(editData)); // Save the updated data back to localStorage
-        setIsEditing(false); // Switch to view mode
+        setUserData(editData);
+        localStorage.setItem(userEmail, JSON.stringify(editData));
+        setIsEditing(false);
     };
 
     if (!userData) {
-        return <div>Loading...</div>; // Show loading while fetching user data
+        return <div>Loading...</div>;
     }
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md mt-10">
             <HomeComponent />
             <div className="flex flex-col items-center space-y-4">
+                {/* Profile Picture */}
+                <img
+                    src={userData.profilePicture}
+                    alt="Profile"
+                    className="w-32 h-32 rounded-full shadow-md object-cover"
+                />
+
                 {/* Profile Info */}
                 {!isEditing ? (
                     <>
                         <h1 className="text-2xl font-bold">{`Name :- ${userData.firstName + " " + userData.lastName}`}</h1>
                         <p className="text-gray-600">{`User Email Id :- ${userData.email}`}</p>
                         <p className="text-center text-gray-800">{`User Name :-  ${userData.username}`}</p>
+                        <p className="text-center text-gray-800">{userData.bio}</p>
                         <button
                             onClick={() => setIsEditing(true)}
                             className="px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600"
@@ -53,8 +60,9 @@ const Profile = ({ userEmail, setUserEmail }) => { // Added setUserEmail prop
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => {
-                                    localStorage.removeItem(userEmail); // Clear user data based on email
+                                    // localStorage.removeItem(userEmail); // Clear user data based on email
                                     setUserEmail(null); // Reset userEmail in parent component
+                                    navigate('/'); // Redirect to the home page
                                 }}
                                 className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600"
                             >
@@ -80,7 +88,7 @@ const Profile = ({ userEmail, setUserEmail }) => { // Added setUserEmail prop
                             onChange={handleInputChange}
                             placeholder="Email Address"
                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            disabled // Disable editing email
+                            disabled
                         />
                         <textarea
                             name="bio"

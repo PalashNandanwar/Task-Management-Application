@@ -54,6 +54,7 @@ const NavBar = ({ userData }) => {
                                     onClick={() => {
                                         // localStorage.removeItem(userData); // Clear user data
                                         setUserEmail(null); // Reset user data
+                                        
                                     }}
                                     className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600"
                                 >

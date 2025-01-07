@@ -15,7 +15,7 @@ const LoginPage = ({ onFormDataSubmit }) => {
 
     // Use useEffect to load data from localStorage when the component mounts
     useEffect(() => {
-        const storedUserData = JSON.parse(localStorage.getItem('userData'));
+        const storedUserData = JSON.parse(localStorage.getItem(formData.email));
         if (storedUserData) {
             setFormData(storedUserData); // Set form data from localStorage if available
         }
