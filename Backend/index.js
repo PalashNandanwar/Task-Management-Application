@@ -69,52 +69,69 @@ const ensureLoggedIn = async (req, res, next) => {
     }
 };
 
-// Routes
+// Sign-up Route (for user registration)
 app.post('/api/signup', async (req, res) => {
     const { firstName, lastName, username, email, password } = req.body;
+
     try {
-        const userExists = await User.findOne({ email });
-        if (userExists) {
+        // Check if the email is already taken
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        const newUser = new User({ firstName, lastName, username, email, password });
+        const newUser = new User({
+            firstName,
+            lastName,
+            username,
+            email,
+            password // Storing plain text password
+        });
+
         await newUser.save();
-        const token = generateAuthToken(newUser);
-        res.status(201).json({ message: 'User registered successfully', token });
-    } catch (error) {
-        console.error('Error during registration:', error.message);
-        res.status(500).json({ message: 'Server error' });
+        res.status(201).json({ message: 'User created successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Error creating user' });
     }
 });
 
-app.post('/api/login', async (req, res) => {
+// Sign-in Route (for user login)
+app.post('/api/signin', async (req, res) => {
     const { email, password } = req.body;
+
     try {
+        // Check if the user exists
         const user = await User.findOne({ email });
-        if (!user || user.password !== password) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+        if (!user) {
+            return res.status(400).json({ message: 'User not found' });
         }
 
+        // Compare the plain text password with the one in the database (not hashed)
+        if (user.password !== password) {
+            return res.status(400).json({ message: 'Invalid password' });
+        }
+
+        // Generate a JWT token for the authenticated user
         const token = generateAuthToken(user);
-        const { password: userPassword, ...userData } = user.toObject();
-        res.status(200).json({ message: 'Login successful', user: userData, token });
+
+        // Send success response with token
+        res.status(200).json({
+            message: 'User logged in successfully',
+            token,
+        });
     } catch (error) {
         console.error('Error during login:', error.message);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// app.get('/api/tasks', ensureLoggedIn, async (req, res) => {
-//     try {
-//         // Example: Fetch tasks for the logged-in user
-//         const tasks = []; // Replace with your database query for tasks
-//         res.status(200).json({ tasks });
-//     } catch (error) {
-//         console.error('Error fetching tasks:', error.message);
-//         res.status(500).json({ message: 'Server error' });
-//     }
-// });
+// Example of a protected route that requires authentication
+app.get('/api/user', ensureLoggedIn, async (req, res) => {
+    res.status(200).json({
+        message: 'User authenticated successfully',
+        user: req.user,
+    });
+});
 
 // Start the server
 app.listen(PORT, () => {

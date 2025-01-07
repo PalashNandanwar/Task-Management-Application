@@ -1,65 +1,47 @@
 /* eslint-disable react/prop-types */
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
-import HomeComponent from '../Components/HomeComponent'; // Assuming you want to keep this component
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 
-const SignUpPage = ({ onUserSignUp }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+const SignUpPage = ({ onEmailUpdate }) => {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate(); // To navigate after successful signup
-
-    useEffect(() => {
-        // Retrieve user data from localStorage when the page loads
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            const user = JSON.parse(storedUser);
-            setEmail(user.email);  // Set email from localStorage if available
-        }
-    }, []);
+    const navigate = useNavigate();
 
     const handleSignUp = async (e) => {
-        e.preventDefault();  // Prevent default form submission
+        e.preventDefault();
 
         setLoading(true);
-        setError('');
+        setError("");
 
         try {
-            const response = await fetch('http://localhost:5000/api/signup', {
-                method: 'POST',
+            const response = await fetch("http://localhost:5000/api/signin", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ email, password }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'An error occurred during sign-up');
+                throw new Error(errorData.message || "An error occurred during sign-up");
             }
 
             const data = await response.json();
-            console.log(data.user);
+            console.log("User signed up successfully:", data);
 
-            console.log('User signed up successfully:', data);
-
-            // Save user data to localStorage
-            const user = { email, password };  // Save email and password, but avoid storing sensitive info in localStorage
-            localStorage.setItem('user', JSON.stringify(user));
-
-            // Optionally, call the parent component callback to notify the parent
-            if (onUserSignUp) {
-                onUserSignUp(user);  // Pass the user data to the parent component
+            // Pass the email to the parent component
+            if (onEmailUpdate) {
+                onEmailUpdate(email);
             }
 
-            // Navigate to home page after successful signup
-            navigate('/');
-
+            // Redirect to the home page or dashboard
+            navigate("/TaskBoard");
         } catch (error) {
-            console.error('Error during sign up:', error);
-            setError(error.message || 'An error occurred. Please try again later.');
+            console.error("Error during sign up:", error);
+            setError(error.message || "An error occurred. Please try again later.");
         } finally {
             setLoading(false);
         }
@@ -67,7 +49,6 @@ const SignUpPage = ({ onUserSignUp }) => {
 
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-            <HomeComponent />
             <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
                 <h2 className="text-center text-3xl font-extrabold text-gray-900">Sign Up</h2>
                 <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
@@ -106,7 +87,7 @@ const SignUpPage = ({ onUserSignUp }) => {
                             disabled={loading}
                             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#2196f3] hover:bg-[#2195f3b1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
-                            {loading ? 'Signing up...' : 'Sign Up'}
+                            {loading ? "Signing up..." : "Sign Up"}
                         </button>
 
                         {error && <p className="mt-2 text-center text-red-600 text-sm">{error}</p>}

@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';  // Add useNavigate
+import { Link, useNavigate } from 'react-router-dom'; // Add useNavigate
 import HomeComponent from '../Components/HomeComponent';
 
 const LoginPage = ({ onFormDataSubmit }) => {
@@ -17,18 +17,19 @@ const LoginPage = ({ onFormDataSubmit }) => {
     useEffect(() => {
         const storedUserData = JSON.parse(localStorage.getItem('userData'));
         if (storedUserData) {
-            setFormData(storedUserData);  // Set form data from localStorage if available
+            setFormData(storedUserData); // Set form data from localStorage if available
         }
     }, []);
 
     console.log(formData);
 
-    // Ensure that formData is sent to the parent component (onFormDataSubmit)
+    // Send only the email to the parent component (onFormDataSubmit)
     useEffect(() => {
-        if (formData.firstName && formData.lastName) {
-            onFormDataSubmit(formData);
+        if (formData.email) {
+            console.log(formData.email);
+            onFormDataSubmit(formData.email);
         }
-    }, [formData, onFormDataSubmit]);
+    }, [formData.email, onFormDataSubmit]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -62,10 +63,10 @@ const LoginPage = ({ onFormDataSubmit }) => {
             console.log('Success:', data.message);
 
             // Save user data to localStorage after successful signup
-            localStorage.setItem('userData', JSON.stringify(formData));
+            localStorage.setItem(formData.email, JSON.stringify(formData));
 
             // Redirect to home page after successful sign-up
-            navigate('/');
+            navigate('/TaskBoard');
         } catch (error) {
             console.error('Error during fetch:', error.message);
             alert('An error occurred. Please try again later.');

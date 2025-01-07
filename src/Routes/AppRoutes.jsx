@@ -1,49 +1,52 @@
 import { Route, Routes } from "react-router-dom";
 import { useState } from "react";
 
-import LoginPage from "../Pages/LoginPage";
-import SignPage from "../Pages/SignPage";
+
 import HomePage from "../Pages/HomePage";
 import TeamManagement from "../Pages/TeamManagement";
 import TaskBoard from "../Pages/TaskBoard";
+import SignUpPage from "../Pages/SignPage";
+import LoginPage from "../Pages/LoginPage";
+import Profile from "../Pages/Profile";
 
 const AppRoutes = () => {
-    const [formDataFromLogin, setFormDataFromLogin] = useState(null);
+    const [userEmail, setUserEmail] = useState("");
 
-    const handleFormData = (formData) => {
-        setFormDataFromLogin(formData);
-        console.log("Form Data received:", formData);
+    // Handler to receive the email ID from LoginPage
+    const handleFormDataSubmit = (signUpEmail) => {
+        setUserEmail(signUpEmail); // Extract and set the email
     };
 
+    console.log("User Email :- " + userEmail);
+
     return (
-        <>
-            <Routes>
-                {/* Home Page */}
-                <Route
-                    path="/"
-                    element={<HomePage userData={formDataFromLogin} />}
-                />
+        <Routes>
+            {/* Home Page */}
+            <Route
+                path="/"
+                element={<HomePage userEmail={userEmail} />}
+            />
 
-                {/* Sign Up Route */}
-                <Route
-                    path="/SignUp"
-                    element={<LoginPage onFormDataSubmit={handleFormData} />}
-                />
+            {/* Sign Up Route */}
+            <Route
+                path="/SignUp"
+                element={<LoginPage onFormDataSubmit={handleFormDataSubmit} />}
+            />
 
-                {/* Sign In Route */}
-                <Route
-                    path="/SignIn"
-                    element={<SignPage userData={formDataFromLogin} />}
-                />
+            {/* Sign In Route */}
+            <Route
+                path="/SignIn"
+                element={<SignUpPage onEmailUpdate={handleFormDataSubmit} />}
+            />
 
-                {/* Protected Dashboard Route */}
-                <Route path="/TaskBoard" element={<TaskBoard />} />
-                <Route path="/TeamManagement" element={<TeamManagement />} />
+            {/* Protected Dashboard Route (You can add authentication logic here) */}
+            <Route path="/TaskBoard" element={<TaskBoard />} />
+            <Route path="/TeamManagement" element={<TeamManagement />} />
+            <Route path="/Profile" element={<Profile userEmail={userEmail} setUserEmail={setUserEmail} />} />
 
-                {/* Fallback 404 Route */}
-                <Route path="*" element={<div>404: Page Not Found</div>} />
-            </Routes>
-        </>
+            {/* Fallback 404 Route */}
+            <Route path="*" element={<div>404: Page Not Found</div>} />
+        </Routes>
     );
 };
 

@@ -6,11 +6,11 @@ import { Link } from "react-router-dom";
 import NavBar from "../Components/NavBar";
 import { MdDashboardCustomize } from "react-icons/md";
 
-const HomePage = ({ userData }) => {
+const HomePage = ({ userEmail }) => {
     return (
         <>
-            {console.log("userDAta" + userData)}
-            <NavBar userData={userData} />
+            {console.log("userDAta" + userEmail)}
+            <NavBar userData={userEmail} />
             <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl w-full space-y-8 text-center bg-white p-10 rounded-lg shadow-xl">
                     <h1 className="text-5xl font-extrabold text-gray-900">Welcome to <span className="text-indigo-600">WorkHive</span></h1>
@@ -58,7 +58,7 @@ const HomePage = ({ userData }) => {
                 </div>
                 <div className="mt-10">
                     {
-                        userData && userData.firstName === "" ?
+                        userEmail ?
                             <div>
                                 <Link to='/Dashboard'>
                                     <button className="flex justify-center items-center px-[4rem] py-[2rem] gap-[1rem] text-xl uppercase font-bold">

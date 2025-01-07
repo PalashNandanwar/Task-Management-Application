@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import TaskCard from "./TaskCard"; // Import TaskCard component
 import { v4 as uuidv4 } from "uuid";
+import HomeComponent from "./HomeComponent";
 
 const KanbanBoard = () => {
   // State for tasks
@@ -103,6 +104,7 @@ const KanbanBoard = () => {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex space-x-4 p-4">
+        <HomeComponent />
         {/* Render columns */}
         {Object.entries(tasks).map(([columnId, columnTasks]) => (
           <Droppable key={columnId} droppableId={columnId}>

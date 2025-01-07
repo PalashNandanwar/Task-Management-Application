@@ -1,0 +1,114 @@
+/* eslint-disable react/prop-types */
+import { useState, useEffect } from "react";
+import HomeComponent from "../Components/HomeComponent";
+
+const Profile = ({ userEmail, setUserEmail }) => { // Added setUserEmail prop
+    const [userData, setUserData] = useState(null); // Initializing userData as null
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState(null); // Initializing editData as null
+
+    // Fetch user data from localStorage based on userEmail
+    useEffect(() => {
+        const storedUserData = localStorage.getItem(userEmail); // Retrieve user data from localStorage using email
+        if (storedUserData) {
+            setUserData(JSON.parse(storedUserData)); // Parse and set user data
+            setEditData(JSON.parse(storedUserData)); // Set initial values for editing
+        }
+    }, [userEmail]); // Dependency on userEmail so it fetches data when the email changes
+
+    // Handle input changes for editable fields
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditData({ ...editData, [name]: value });
+    };
+
+    // Save updated profile data
+    const saveProfile = () => {
+        setUserData(editData); // Update the userData state
+        localStorage.setItem(userEmail, JSON.stringify(editData)); // Save the updated data back to localStorage
+        setIsEditing(false); // Switch to view mode
+    };
+
+    if (!userData) {
+        return <div>Loading...</div>; // Show loading while fetching user data
+    }
+
+    return (
+        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md mt-10">
+            <HomeComponent />
+            <div className="flex flex-col items-center space-y-4">
+                {/* Profile Info */}
+                {!isEditing ? (
+                    <>
+                        <h1 className="text-2xl font-bold">{`Name :- ${userData.firstName + " " + userData.lastName}`}</h1>
+                        <p className="text-gray-600">{`User Email Id :- ${userData.email}`}</p>
+                        <p className="text-center text-gray-800">{`User Name :-  ${userData.username}`}</p>
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600"
+                        >
+                            Edit Profile
+                        </button>
+
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => {
+                                    localStorage.removeItem(userEmail); // Clear user data based on email
+                                    setUserEmail(null); // Reset userEmail in parent component
+                                }}
+                                className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <div className="space-y-4 w-full">
+                        {/* Editable Fields */}
+                        <input
+                            type="text"
+                            name="name"
+                            value={editData.name}
+                            onChange={handleInputChange}
+                            placeholder="Full Name"
+                            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        <input
+                            type="email"
+                            name="email"
+                            value={editData.email}
+                            onChange={handleInputChange}
+                            placeholder="Email Address"
+                            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            disabled // Disable editing email
+                        />
+                        <textarea
+                            name="bio"
+                            value={editData.bio}
+                            onChange={handleInputChange}
+                            placeholder="Write something about yourself"
+                            rows="3"
+                            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        <div className="flex justify-between">
+                            <button
+                                onClick={saveProfile}
+                                className="px-4 py-2 text-white bg-green-500 rounded-md hover:bg-green-600"
+                            >
+                                Save
+                            </button>
+                            <button
+                                onClick={() => setIsEditing(false)}
+                                className="px-4 py-2 text-white bg-gray-500 rounded-md hover:bg-gray-600"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default Profile;
