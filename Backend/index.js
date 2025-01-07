@@ -24,7 +24,24 @@ const userSchema = new mongoose.Schema({
     isActive: { type: Boolean, default: false }, // Add isActive field
 }, { timestamps: true });
 
+const taskSchema = new mongoose.Schema(
+    {
+        title: { type: String, required: true, trim: true },
+        description: { type: String, trim: true },
+        status: {
+            type: String,
+            enum: ['todo', 'in-progress', 'done'], // Status options
+            default: 'todo',
+        },
+        assignedUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        position: { type: Number, default: 0 }, // For moving tasks
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Task creator
+    },
+    { timestamps: true }
+);
+
 const User = mongoose.model('User', userSchema);
+const Task = mongoose.model('Task', taskSchema);
 
 // MongoDB Atlas Connection
 const connectDB = async () => {
@@ -151,6 +168,148 @@ app.post('/api/logout', async (req, res) => {
         res.status(200).json({ message: 'User logged out successfully' });
     } catch (err) {
         res.status(500).json({ message: 'Error logging out' });
+    }
+});
+
+//Task APIs
+
+//create tasks post
+app.post('/api/tasks', ensureLoggedIn, async (req, res) => {
+    const { title, description, assignedUser, status, position } = req.body;
+
+    try {
+        const newTask = new Task({
+            title,
+            description,
+            status,
+            position,
+            assignedUser,
+            createdBy: req.user._id, // Task creator
+        });
+
+        await newTask.save();
+        res.status(201).json(newTask);
+    } catch (error) {
+        console.error('Error creating task:', error.message);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+//Get All Tasks
+app.get('/api/tasks', ensureLoggedIn, async (req, res) => {
+    try {
+        const tasks = await Task.find({ createdBy: req.user._id }).populate('assignedUser');
+        res.status(200).json(tasks);
+    } catch (error) {
+        console.error('Error fetching tasks:', error.message);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+//Get Task by ID
+app.get('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
+    try {
+        const task = await Task.findOne({
+            _id: req.params.id,
+            createdBy: req.user._id,
+        }).populate('assignedUser');
+
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        res.status(200).json(task);
+    } catch (error) {
+        console.error('Error fetching task:', error.message);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+//Update Task
+app.put('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
+    const { title, description, assignedUser } = req.body;
+
+    try {
+        const updatedTask = await Task.findOneAndUpdate(
+            { _id: req.params.id, createdBy: req.user._id },
+            { title, description, assignedUser },
+            { new: true }
+        );
+
+        if (!updatedTask) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        res.status(200).json(updatedTask);
+    } catch (error) {
+        console.error('Error updating task:', error.message);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+//delete task
+app.delete('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
+    try {
+        const deletedTask = await Task.findOneAndDelete({
+            _id: req.params.id,
+            createdBy: req.user._id,
+        });
+
+        if (!deletedTask) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        res.status(200).json({ message: 'Task deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting task:', error.message);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+//Update task status
+app.patch('/api/tasks/:id/status', ensureLoggedIn, async (req, res) => {
+    const { status } = req.body;
+
+    try {
+        const updatedTask = await Task.findOneAndUpdate(
+            { _id: req.params.id, createdBy: req.user._id },
+            { status },
+            { new: true }
+        );
+
+        if (!updatedTask) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        res.status(200).json(updatedTask);
+    } catch (error) {
+        console.error('Error updating status:', error.message);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+//move task to another column
+app.patch('/api/tasks/:id/move', ensureLoggedIn, async (req, res) => {
+    const { position } = req.body;
+
+    try {
+        const updatedTask = await Task.findOneAndUpdate(
+            { _id: req.params.id, createdBy: req.user._id },
+            { position },
+            { new: true }
+        );
+
+        if (!updatedTask) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        res.status(200).json(updatedTask);
+    } catch (error) {
+        console.error('Error moving task:', error.message);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
