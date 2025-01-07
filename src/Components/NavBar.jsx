@@ -12,7 +12,7 @@ const NavBar = ({ userData }) => {
         <>
             <div className=" w-full h-auto bg-gray-100">
                 <div >
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center px-[4rem] py-[2rem]">
                         <Link to='/'>
                             <p className="flex justify-center items-center px-[4rem] py-[2rem] gap-[1rem] text-4xl uppercase font-bold text-[#2196f3]">WorkHive <span className=" text-5xl"><FcParallelTasks /></span> </p>
                         </Link>
