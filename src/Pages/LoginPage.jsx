@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';  // Add useNavigate
 import HomeComponent from '../Components/HomeComponent';
 
@@ -13,9 +13,22 @@ const LoginPage = ({ onFormDataSubmit }) => {
         password: ''
     });
 
+    // Use useEffect to load data from localStorage when the component mounts
+    useEffect(() => {
+        const storedUserData = JSON.parse(localStorage.getItem('userData'));
+        if (storedUserData) {
+            setFormData(storedUserData);  // Set form data from localStorage if available
+        }
+    }, []);
+
     console.log(formData);
 
-    onFormDataSubmit(formData);
+    // Ensure that formData is sent to the parent component (onFormDataSubmit)
+    useEffect(() => {
+        if (formData.firstName && formData.lastName) {
+            onFormDataSubmit(formData);
+        }
+    }, [formData, onFormDataSubmit]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -48,10 +61,8 @@ const LoginPage = ({ onFormDataSubmit }) => {
             alert('User registered successfully!');
             console.log('Success:', data.message);
 
-            // Pass the formData to the parent component
-            // if (onFormDataSubmit) {
-
-            // }
+            // Save user data to localStorage after successful signup
+            localStorage.setItem('userData', JSON.stringify(formData));
 
             // Redirect to home page after successful sign-up
             navigate('/');
@@ -65,7 +76,7 @@ const LoginPage = ({ onFormDataSubmit }) => {
         <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
             <HomeComponent />
             <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
-                <h2 className="text-center text-3xl font-extrabold text-gray-900">Sign In Page</h2>
+                <h2 className="text-center text-3xl font-extrabold text-gray-900">Sign Up Page</h2>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="rounded-md shadow-sm -space-y-px flex flex-col gap-4">
                         <div className="flex gap-2">
@@ -142,14 +153,14 @@ const LoginPage = ({ onFormDataSubmit }) => {
                             type="submit"
                             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#2196f3] hover:bg-[#2195f3b1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
-                            Login
+                            Sign Up
                         </button>
 
                         <div className="mt-8 text-base font-semibold">
                             <p>
-                                Already Sign in
+                                Already have an account?
                                 <Link to="/SignIn">
-                                    <span className="text-indigo-600 hover:text-indigo-800"> Click Here</span>.
+                                    <span className="text-indigo-600 hover:text-indigo-800"> Click Here</span> for login.
                                 </Link>
                             </p>
                         </div>

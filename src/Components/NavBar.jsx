@@ -3,7 +3,6 @@
 // import React from 'react'
 import { FcParallelTasks } from "react-icons/fc";
 import { Link } from "react-router-dom";
-import { MdDashboardCustomize } from "react-icons/md";
 
 
 
@@ -20,12 +19,14 @@ const NavBar = ({ userData }) => {
 
                         {
                             userData ?
-                                <div>
-                                    <Link to='/Dashboard'>
-                                        <button className="flex justify-center items-center px-[4rem] py-[2rem] gap-[1rem] text-xl uppercase font-bold">
-                                            Dashboard <span ><MdDashboardCustomize /></span>
-                                        </button>
+                                <div className="flex space-x-20">
+                                    <Link to="/TaskBoard" className="text-lg font-medium text-gray-700 hover:text-[#2196f3] transition duration-200">
+                                        Task Board
                                     </Link>
+                                    <Link to="/TeamManagement" className="text-lg font-medium text-gray-700 hover:text-[#2196f3] transition duration-200">
+                                        Team Management
+                                    </Link>
+                                    <Notification />
                                 </div>
                                 :
                                 <div>
