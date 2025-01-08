@@ -41,7 +41,7 @@ const AppRoutes = () => {
 
             {/* Protected Dashboard Route (You can add authentication logic here) */}
             <Route path="/TaskBoard" element={<TaskBoard />} />
-            <Route path="/TeamManagement" element={<TeamManagement />} />
+            <Route path="/TeamManagement" element={<TeamManagement userEmail={userEmail} />} />
             <Route path="/Profile" element={<Profile userEmail={userEmail} setUserEmail={setUserEmail} />} />
 
             {/* Fallback 404 Route */}

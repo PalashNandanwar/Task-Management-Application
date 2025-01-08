@@ -4,7 +4,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
@@ -21,9 +20,58 @@ const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true, trim: true },
     email: { type: String, required: true, unique: true, trim: true },
     password: { type: String, required: true, minlength: 6 },
-    isActive: { type: Boolean, default: false }, // Add isActive field
+    isActive: { type: Boolean, default: false },
 }, { timestamps: true });
 
+
+// Define the Team Schema 
+const TeamSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+    },
+    description: {
+        type: String,
+        default: "",
+    },
+    members: [
+        {
+            firstName: {
+                type: String,
+                required: true,
+                trim: true,
+            },
+            lastName: {
+                type: String,
+                required: true,
+                trim: true,
+            },
+            username: {
+                type: String,
+                required: true,
+                unique: true,
+                trim: true,
+            },
+            email: {
+                type: String,
+                required: true,
+                unique: true,
+                trim: true,
+            },
+            isActive: {
+                type: Boolean,
+                default: false,
+            },
+            role: {
+                type: String,
+                enum: ["Admin", "Member"],
+                default: "Member",
+            },
+        },
+    ],
+}, { timestamps: true });
+
+// Define the Task Schema 
 const taskSchema = new mongoose.Schema(
     {
         title: { type: String, required: true, trim: true },
@@ -42,6 +90,7 @@ const taskSchema = new mongoose.Schema(
 
 const User = mongoose.model('User', userSchema);
 const Task = mongoose.model('Task', taskSchema);
+const Team = mongoose.model('Team', TeamSchema);
 
 // MongoDB Atlas Connection
 const connectDB = async () => {
@@ -59,33 +108,24 @@ const connectDB = async () => {
 
 connectDB();
 
-// Generate JWT token
-const generateAuthToken = (user) => {
-    const payload = { userId: user._id, username: user.username };
-    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-};
-
-// Middleware to ensure the user is logged in
-const ensureLoggedIn = async (req, res, next) => {
-    try {
-        const token = req.header('Authorization')?.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ message: 'Unauthorized - No Token Provided' });
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.userId).select('-password');
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        req.user = user;
-        next();
-    } catch (error) {
-        console.error('Error in ensureLoggedIn middleware:', error.message);
-        res.status(500).json({ message: 'Internal server error' });
+// Get user by Email Id
+app.get('/user', async (req, res) => {
+    const email = req.query.email; // Email provided as query parameter
+    if (!email) {
+        return res.status(400).json({ error: 'Email query parameter is required' });
     }
-};
+
+    try {
+        const user = await User.findOne({ email }); // Fetch user by email
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json(user); // Respond with user data
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
 // Sign-up Route (for user registration)
 app.post('/api/signup', async (req, res) => {
@@ -135,13 +175,8 @@ app.post('/api/signin', async (req, res) => {
         user.isActive = true;
         await user.save();
 
-        // Generate a JWT token for the authenticated user
-        const token = generateAuthToken(user);
-
-        // Send success response with token
         res.status(200).json({
             message: 'User logged in successfully',
-            token,
         });
     } catch (error) {
         console.error('Error during login:', error.message);
@@ -171,10 +206,130 @@ app.post('/api/logout', async (req, res) => {
     }
 });
 
+// Team API's
+
+// Create Team
+app.post("/api/teams", async (req, res) => {
+    const { name, description, members } = req.body;
+
+    if (!name || !Array.isArray(members)) {
+        return res.status(400).json({ error: "Name and members array are required." });
+    }
+
+    for (const member of members) {
+        if (!member.firstName || !member.lastName || !member.username || !member.email) {
+            return res.status(400).json({ error: "Each member must have first name, last name, username, and email." });
+        }
+    }
+
+    try {
+        const newTeam = new Team({
+            name,
+            description,
+            members,
+        });
+
+        const savedTeam = await newTeam.save();
+        return res.status(201).json(savedTeam);
+    } catch (err) {
+        console.error("Error creating team:", err);
+        return res.status(500).json({ error: err.message || "Failed to create team." });
+    }
+});
+
+// Get Teams
+app.get("/api/teams", async (req, res) => {
+    try {
+        const teams = await Team.find();
+        if (teams.length === 0) {
+            return res.status(404).json({ message: "No teams found" });
+        }
+        res.status(200).json(teams);
+    } catch (err) {
+        console.error("Error fetching teams:", err);
+        res.status(500).json({ error: "Failed to fetch teams" });
+    }
+});
+
+// Add Team Members
+app.post('/api/teams/:teamId/members', async (req, res) => {
+    const { teamId } = req.params;
+    const { firstName, lastName, username, email } = req.body;
+
+    try {
+        const team = await Team.findById(teamId);
+        if (!team) {
+            return res.status(404).json({ error: 'Team not found' });
+        }
+
+        const newMember = {
+            firstName,
+            lastName,
+            username,
+            email,
+            isActive: true,
+            role: "Member",
+        };
+
+        team.members.push(newMember);
+        await team.save();
+
+        res.status(200).json({ message: 'Member added successfully', team });
+    } catch (error) {
+        console.error('Error adding member:', error.message);
+        res.status(500).json({ error: 'An error occurred while adding the member' });
+    }
+});
+
+// Delete Team Members
+app.delete('/api/teams/:teamId/members', async (req, res) => {
+    const { teamId } = req.params;
+    const { email } = req.body;
+
+    try {
+        const team = await Team.findById(teamId);
+        if (!team) {
+            return res.status(404).json({ error: 'Team not found' });
+        }
+
+        const memberIndex = team.members.findIndex(member => member.email === email);
+        if (memberIndex === -1) {
+            return res.status(404).json({ error: 'Member not found in the team' });
+        }
+
+        team.members.splice(memberIndex, 1);
+        await team.save();
+
+        res.status(200).json({ message: 'Member deleted successfully', team });
+    } catch (error) {
+        console.error('Error deleting member:', error.message);
+        res.status(500).json({ error: 'An error occurred while deleting the member' });
+    }
+});
+
+// Delete Team
+app.delete('/api/teams/:teamId', async (req, res) => {
+    const { teamId } = req.params;
+
+    try {
+        const deletedTeam = await Team.findByIdAndDelete(teamId);
+        if (!deletedTeam) {
+            return res.status(404).json({ error: 'Team not found' });
+        }
+
+        res.status(200).json({ message: 'Team deleted successfully', deletedTeam });
+    } catch (error) {
+        console.error('Error deleting team:', error.message);
+        res.status(500).json({ error: 'An error occurred while deleting the team' });
+    }
+});
+
+
+
 //Task APIs
 
 //create tasks post
-app.post('/api/tasks', ensureLoggedIn, async (req, res) => {
+app.post('/api/tasks', async (req, res) => {
     const { title, description, assignedUser, status, position } = req.body;
 
     try {
@@ -184,7 +339,6 @@ app.post('/api/tasks', ensureLoggedIn, async (req, res) => {
             status,
             position,
             assignedUser,
-            createdBy: req.user._id, // Task creator
         });
 
         await newTask.save();
@@ -196,9 +350,9 @@ app.post('/api/tasks', ensureLoggedIn, async (req, res) => {
 });
 
 //Get All Tasks
-app.get('/api/tasks', ensureLoggedIn, async (req, res) => {
+app.get('/api/tasks', async (req, res) => {
     try {
-        const tasks = await Task.find({ createdBy: req.user._id }).populate('assignedUser');
+        const tasks = await Task.find().populate('assignedUser');
         res.status(200).json(tasks);
     } catch (error) {
         console.error('Error fetching tasks:', error.message);
@@ -208,11 +362,10 @@ app.get('/api/tasks', ensureLoggedIn, async (req, res) => {
 
 
 //Get Task by ID
-app.get('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
+app.get('/api/tasks/:id', async (req, res) => {
     try {
         const task = await Task.findOne({
             _id: req.params.id,
-            createdBy: req.user._id,
         }).populate('assignedUser');
 
         if (!task) {
@@ -228,12 +381,12 @@ app.get('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
 
 
 //Update Task
-app.put('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
+app.put('/api/tasks/:id', async (req, res) => {
     const { title, description, assignedUser } = req.body;
 
     try {
         const updatedTask = await Task.findOneAndUpdate(
-            { _id: req.params.id, createdBy: req.user._id },
+            { _id: req.params.id },
             { title, description, assignedUser },
             { new: true }
         );
@@ -251,11 +404,10 @@ app.put('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
 
 
 //delete task
-app.delete('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
+app.delete('/api/tasks/:id', async (req, res) => {
     try {
         const deletedTask = await Task.findOneAndDelete({
             _id: req.params.id,
-            createdBy: req.user._id,
         });
 
         if (!deletedTask) {
@@ -270,12 +422,12 @@ app.delete('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
 });
 
 //Update task status
-app.patch('/api/tasks/:id/status', ensureLoggedIn, async (req, res) => {
+app.patch('/api/tasks/:id/status', async (req, res) => {
     const { status } = req.body;
 
     try {
         const updatedTask = await Task.findOneAndUpdate(
-            { _id: req.params.id, createdBy: req.user._id },
+            { _id: req.params.id },
             { status },
             { new: true }
         );
@@ -292,12 +444,12 @@ app.patch('/api/tasks/:id/status', ensureLoggedIn, async (req, res) => {
 });
 
 //move task to another column
-app.patch('/api/tasks/:id/move', ensureLoggedIn, async (req, res) => {
+app.patch('/api/tasks/:id/move', async (req, res) => {
     const { position } = req.body;
 
     try {
         const updatedTask = await Task.findOneAndUpdate(
-            { _id: req.params.id, createdBy: req.user._id },
+            { _id: req.params.id },
             { position },
             { new: true }
         );
@@ -311,14 +463,6 @@ app.patch('/api/tasks/:id/move', ensureLoggedIn, async (req, res) => {
         console.error('Error moving task:', error.message);
         res.status(500).json({ message: 'Server error' });
     }
-});
-
-// Example of a protected route that requires authentication
-app.get('/api/user', ensureLoggedIn, async (req, res) => {
-    res.status(200).json({
-        message: 'User authenticated successfully',
-        user: req.user,
-    });
 });
 
 // Start the server
