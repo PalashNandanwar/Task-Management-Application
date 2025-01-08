@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useState, useEffect } from "react";
 import HomeComponent from "../Components/HomeComponent";
 
@@ -47,7 +48,7 @@ const TeamManagement = ({ userEmail }) => {
                 alert('Team deleted successfully!');
                 fetchTeams();  // Refresh the teams list
             } catch (error) {
-                alert('Error deleting team');
+                alert('Error deleting team' + error);
             }
         }
     };
@@ -60,7 +61,7 @@ const TeamManagement = ({ userEmail }) => {
                 headers: { 'Content-Type': 'application/json' },
             });
         } catch (error) {
-            alert("Error fetching user data.");
+            alert("Error fetching user data." + error);
             return null;
         }
     };
