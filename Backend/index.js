@@ -74,18 +74,56 @@ const TeamSchema = new mongoose.Schema({
 // Define the Task Schema 
 const taskSchema = new mongoose.Schema(
     {
-        title: { type: String, required: true, trim: true },
-        description: { type: String, trim: true },
+        title: {
+            type: String,
+            required: true
+        },
+        description: {
+            type: String,
+            required: true
+        },
         status: {
             type: String,
-            enum: ['todo', 'in-progress', 'done'], // Status options
-            default: 'todo',
+            enum: ['To Do', 'In Progress', 'Completed'],
+            default: 'To Do'
         },
-        assignedUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        position: { type: Number, default: 0 }, // For moving tasks
-        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Task creator
+        priority: {
+            type: String,
+            enum: ['Low', 'Medium', 'High', 'Critical'],
+            default: 'Medium'
+        },
+        assignees: [
+            {
+                id: {
+                    type: String,    // Unique ID of the assignee (can be ObjectId if referring to a user collection)
+                    required: true
+                },
+                name: {
+                    type: String,
+                    required: true
+                },
+                email: {
+                    type: String,
+                    required: true
+                }
+            }
+        ],
+        createdBy: {
+            id: {
+                type: String,    // Unique ID of the creator (can be ObjectId if referring to a user collection)
+                required: true
+            },
+            name: {
+                type: String,
+                required: true
+            },
+            email: {
+                type: String,
+                required: true
+            }
+        }
     },
-    { timestamps: true }
+    { timestamps: true }  // Automatically create createdAt and updatedAt fields
 );
 
 const User = mongoose.model('User', userSchema);
@@ -107,6 +145,33 @@ const connectDB = async () => {
 };
 
 connectDB();
+
+const generateAuthToken = (user) => {
+    const payload = { userId: user._id, username: user.username };
+    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
+
+// Middleware to ensure the user is logged in
+const ensureLoggedIn = async (req, res, next) => {
+    try {
+        const token = req.header('Authorization')?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Unauthorized - No Token Provided' });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.userId).select('-password');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error('Error in ensureLoggedIn middleware:', error.message);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
 
 // Get user by Email Id
 app.get('/user', async (req, res) => {
@@ -186,6 +251,7 @@ app.post('/api/signin', async (req, res) => {
 
 // Logout Route (to set isActive to false)
 app.post('/api/logout', async (req, res) => {
+    console.log('Request body:', req.body);
     const { email } = req.body;
 
     try {
@@ -204,6 +270,28 @@ app.post('/api/logout', async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: 'Error logging out' });
     }
+});
+
+// Get all users
+app.get('/api/users', async (req, res) => {
+    try {
+        const users = await User.find(); // Fetch all users from the database
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'No users found' });
+        }
+        res.status(200).json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error.message);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// Example of a protected route that requires authentication
+app.get('/api/user', ensureLoggedIn, async (req, res) => {
+    res.status(200).json({
+        message: 'User authenticated successfully',
+        user: req.user,
+    });
 });
 
 // Team API's
@@ -254,7 +342,7 @@ app.get("/api/teams", async (req, res) => {
 // Add Team Members
 app.post('/api/teams/:teamId/members', async (req, res) => {
     const { teamId } = req.params;
-    const { firstName, lastName, username, email } = req.body;
+    const { firstName, lastName, username, email, isActive } = req.body;
 
     try {
         const team = await Team.findById(teamId);
@@ -267,7 +355,7 @@ app.post('/api/teams/:teamId/members', async (req, res) => {
             lastName,
             username,
             email,
-            isActive: true,
+            isActive,
             role: "Member",
         };
 
@@ -325,20 +413,62 @@ app.delete('/api/teams/:teamId', async (req, res) => {
 });
 
 
+//Check user is in Team 
+app.post('/api/teams/:teamId/isMember', async (req, res) => {
+    const { teamId } = req.params;
+    const { email } = req.body;
 
+    if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+    }
+
+    try {
+        // Find the team by ID
+        const team = await Team.findById(teamId);
+        if (!team) {
+            return res.status(404).json({ error: 'Team not found' });
+        }
+
+        // Check if the email exists in the team's members
+        const isMember = team.members.some(member => member.email === email);
+
+        if (isMember) {
+            return res.status(200).json({ message: 'User is a member of the team' });
+        } else {
+            return res.status(404).json({ message: 'User is not a member of the team' });
+        }
+    } catch (error) {
+        console.error('Error checking team membership:', error.message);
+        return res.status(500).json({ error: 'An error occurred while checking membership' });
+    }
+});
 //Task APIs
 
 //create tasks post
-app.post('/api/tasks', async (req, res) => {
-    const { title, description, assignedUser, status, position } = req.body;
+app.post('/api/tasks', ensureLoggedIn, async (req, res) => {
+    const { title, description, assignedUser, status, priority, position } = req.body;
+
+
+    // Validate the status field
+    // Validate the status field
+    if (!['todo', 'in-progress', 'done'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    // Validate the priority field
+    if (!['high', 'medium', 'low'].includes(priority)) {
+        return res.status(400).json({ message: 'Invalid priority value. Please choose High, Medium, or Low.' });
+    }
 
     try {
         const newTask = new Task({
             title,
             description,
             status,
+            priority,
             position,
             assignedUser,
+            createdBy: req.user._id, // Task creator
         });
 
         await newTask.save();
@@ -350,9 +480,9 @@ app.post('/api/tasks', async (req, res) => {
 });
 
 //Get All Tasks
-app.get('/api/tasks', async (req, res) => {
+app.get('/api/tasks', ensureLoggedIn, async (req, res) => {
     try {
-        const tasks = await Task.find().populate('assignedUser');
+        const tasks = await Task.find({ createdBy: req.user._id }).populate('assignedUser');
         res.status(200).json(tasks);
     } catch (error) {
         console.error('Error fetching tasks:', error.message);
@@ -362,31 +492,24 @@ app.get('/api/tasks', async (req, res) => {
 
 
 //Get Task by ID
-app.get('/api/tasks/:id', async (req, res) => {
+app.get('/api/tasks', async (req, res) => {
     try {
-        const task = await Task.findOne({
-            _id: req.params.id,
-        }).populate('assignedUser');
-
-        if (!task) {
-            return res.status(404).json({ message: 'Task not found' });
-        }
-
-        res.status(200).json(task);
+        const tasks = await Task.find(); // You can adjust this to fetch tasks without user filtering
+        res.status(200).json(tasks);
     } catch (error) {
-        console.error('Error fetching task:', error.message);
+        console.error('Error fetching tasks:', error.message);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
 
 //Update Task
-app.put('/api/tasks/:id', async (req, res) => {
+app.put('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
     const { title, description, assignedUser } = req.body;
 
     try {
         const updatedTask = await Task.findOneAndUpdate(
-            { _id: req.params.id },
+            { _id: req.params.id, createdBy: req.user._id },
             { title, description, assignedUser },
             { new: true }
         );
@@ -404,10 +527,11 @@ app.put('/api/tasks/:id', async (req, res) => {
 
 
 //delete task
-app.delete('/api/tasks/:id', async (req, res) => {
+app.delete('/api/tasks/:id', ensureLoggedIn, async (req, res) => {
     try {
         const deletedTask = await Task.findOneAndDelete({
             _id: req.params.id,
+            createdBy: req.user._id,
         });
 
         if (!deletedTask) {
@@ -422,12 +546,12 @@ app.delete('/api/tasks/:id', async (req, res) => {
 });
 
 //Update task status
-app.patch('/api/tasks/:id/status', async (req, res) => {
+app.patch('/api/tasks/:id/status', ensureLoggedIn, async (req, res) => {
     const { status } = req.body;
 
     try {
         const updatedTask = await Task.findOneAndUpdate(
-            { _id: req.params.id },
+            { _id: req.params.id, createdBy: req.user._id },
             { status },
             { new: true }
         );
@@ -444,12 +568,12 @@ app.patch('/api/tasks/:id/status', async (req, res) => {
 });
 
 //move task to another column
-app.patch('/api/tasks/:id/move', async (req, res) => {
+app.patch('/api/tasks/:id/move', ensureLoggedIn, async (req, res) => {
     const { position } = req.body;
 
     try {
         const updatedTask = await Task.findOneAndUpdate(
-            { _id: req.params.id },
+            { _id: req.params.id, createdBy: req.user._id },
             { position },
             { new: true }
         );

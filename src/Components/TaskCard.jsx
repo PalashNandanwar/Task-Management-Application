@@ -1,12 +1,45 @@
 // /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable react/prop-types */
 
-const TaskCard = ({ task, onEdit, onDelete }) => {
+import axios from "axios";
+
+const TaskCard = ({ task, onTaskUpdated }) => {
   // Color codes for priority levels
   const priorityColors = {
     High: "bg-red-500",
     Medium: "bg-yellow-500",
     Low: "bg-green-500",
+  };
+
+  // Handle Delete Task
+  const handleDelete = async (taskId) => {
+    try {
+      await axios.delete(`/api/tasks/${taskId}`);
+      alert("Task deleted successfully!");
+      onTaskUpdated(); // Notify parent to refresh tasks
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      alert("Failed to delete the task. Please try again.");
+    }
+  };
+
+  // Handle Edit Task
+  const handleEdit = async (taskId) => {
+    const updatedFields = prompt(
+      "Enter updated fields in JSON format, e.g., {\"title\": \"New Title\"}:"
+    );
+
+    if (!updatedFields) return;
+
+    try {
+      const parsedFields = JSON.parse(updatedFields);
+      await axios.put(`/api/tasks/${taskId}`, parsedFields);
+      alert("Task updated successfully!");
+      onTaskUpdated(); // Notify parent to refresh tasks
+    } catch (error) {
+      console.error("Error updating task:", error);
+      alert("Failed to update the task. Ensure the input is valid JSON.");
+    }
   };
 
   return (
@@ -25,9 +58,8 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
           {task.priority}
         </span>
         <span
-          className={`text-sm font-medium ${
-            new Date(task.deadline) < new Date() ? "text-red-500" : "text-gray-500"
-          }`}
+          className={`text-sm font-medium ${new Date(task.deadline) < new Date() ? "text-red-500" : "text-gray-500"
+            }`}
         >
           {task.deadline}
         </span>
@@ -41,13 +73,13 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
       {/* Buttons for Actions */}
       <div className="flex justify-end mt-4 space-x-2">
         <button
-          onClick={() => onEdit(task.id)}
+          onClick={() => handleEdit(task.id)}
           className="text-sm text-blue-500 hover:text-blue-700"
         >
           Edit
         </button>
         <button
-          onClick={() => onDelete(task.id)}
+          onClick={() => handleDelete(task.id)}
           className="text-sm text-red-500 hover:text-red-700"
         >
           Delete

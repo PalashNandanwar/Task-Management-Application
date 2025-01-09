@@ -1,48 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import TaskCard from "./TaskCard"; // Import TaskCard component
-import { v4 as uuidv4 } from "uuid";
 import HomeComponent from "./HomeComponent";
+import axios from "axios"; // Import axios for API requests
 
 const KanbanBoard = () => {
   // State for tasks
   const [tasks, setTasks] = useState({
-    todo: [
-      {
-        id: "1",
-        title: "Fix Login Issue",
-        description: "Investigate and fix the bug in the login API.",
-        priority: "High",
-        deadline: "2024-01-10",
-        assigned: "John Doe",
-      },
-      {
-        id: "2",
-        title: "Update Documentation",
-        description: "Add missing details to the API documentation.",
-        priority: "Medium",
-        deadline: "2024-01-15",
-        assigned: "Jane Smith",
-      },
-    ],
+    todo: [],
     inProgress: [],
     completed: [],
   });
 
-  // State for new task form
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
     priority: "Medium",
     deadline: "",
     assigned: "",
-    status: "todo", // Default column is 'todo'
+    status: "todo",
   });
 
   const [isAddingTask, setIsAddingTask] = useState(false); // Control modal visibility
 
+  // Fetch tasks from the server
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('/api/tasks', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const fetchedTasks = response.data;
+
+        console.log('Fetched tasks:', fetchedTasks); // Log the fetched tasks
+
+        // Group tasks by status
+        const groupedTasks = {
+          todo: fetchedTasks.filter((task) => task.status === 'todo'),
+          inProgress: fetchedTasks.filter((task) => task.status === 'inProgress'),
+          completed: fetchedTasks.filter((task) => task.status === 'completed'),
+        };
+
+        setTasks(groupedTasks);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
   // Handle drag and drop
-  const onDragEnd = (result) => {
+  const onDragEnd = async (result) => {
     const { source, destination } = result;
 
     if (!destination) return;
@@ -54,6 +66,7 @@ const KanbanBoard = () => {
     const destinationTasks = Array.from(destinationColumn);
 
     const [movedTask] = sourceTasks.splice(source.index, 1);
+    movedTask.status = destination.droppableId;
     destinationTasks.splice(destination.index, 0, movedTask);
 
     setTasks({
@@ -61,6 +74,13 @@ const KanbanBoard = () => {
       [source.droppableId]: sourceTasks,
       [destination.droppableId]: destinationTasks,
     });
+
+    // Update the task status in the backend
+    try {
+      await axios.put(`/api/tasks/${movedTask._id}`, { status: movedTask.status });
+    } catch (error) {
+      console.error("Error updating task status:", error);
+    }
   };
 
   // Handle input changes in the form
@@ -72,34 +92,48 @@ const KanbanBoard = () => {
     }));
   };
 
-  // Add new task to the specified column
-  const handleAddTask = (columnId) => {
+  // Add new task
+  const handleAddTask = async (columnId) => {
     if (!newTask.title.trim()) {
       alert("Task title is required!");
       return;
     }
 
-    const newTaskData = {
-      id: uuidv4(),
-      ...newTask,
-      status: columnId,
-    };
+    try {
+      const token = localStorage.getItem('token');
+      const status = columnId; // Set the status based on the columnId
+      const response = await axios.post("/api/tasks", {
+        title: newTask.title,
+        description: newTask.description,
+        priority: newTask.priority,
+        deadline: newTask.deadline,
+        assigned: newTask.assigned,
+        status: status, // Set the status based on the columnId
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const createdTask = response.data;
 
-    setTasks((prevTasks) => ({
-      ...prevTasks,
-      [columnId]: [...prevTasks[columnId], newTaskData],
-    }));
+      setTasks((prevTasks) => ({
+        ...prevTasks,
+        [columnId]: [...prevTasks[columnId], createdTask],
+      }));
 
-    setIsAddingTask(false);
-    setNewTask({
-      title: "",
-      description: "",
-      priority: "Medium",
-      deadline: "",
-      assigned: "",
-      status: "todo",
-    });
+      setIsAddingTask(false);
+      setNewTask({
+        title: "",
+        description: "",
+        priority: "Medium",
+        deadline: "",
+        assigned: "",
+      });
+    } catch (error) {
+      console.error("Error adding task:", error);
+    }
   };
+
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -119,7 +153,7 @@ const KanbanBoard = () => {
                 </h2>
 
                 {columnTasks.map((task, index) => (
-                  <Draggable key={task.id} draggableId={task.id} index={index}>
+                  <Draggable key={task._id} draggableId={task._id} index={index}>
                     {(provided) => (
                       <div
                         {...provided.draggableProps}
@@ -129,8 +163,8 @@ const KanbanBoard = () => {
                         {/* Render TaskCard */}
                         <TaskCard
                           task={task}
-                          onEdit={(id) => console.log("Edit Task", id)}
-                          onDelete={(id) => console.log("Delete Task", id)}
+                          onEdit={(_id) => console.log("Edit Task", _id)}
+                          onDelete={(_id) => console.log("Delete Task", _id)}
                         />
                       </div>
                     )}

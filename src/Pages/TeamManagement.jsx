@@ -17,6 +17,7 @@ const fetchData = async (url, options) => {
     }
 };
 
+
 const TeamManagement = ({ userEmail }) => {
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [teamName, setTeamName] = useState('');
@@ -152,7 +153,8 @@ const TeamManagement = ({ userEmail }) => {
         };
 
         try {
-            await addMemberToTeam(selectedTeam._id, member);  // Use selectedTeam._id
+            await addMemberToTeam(selectedTeam._id, member);
+            await checkTeamMembership(selectedTeam._id, member);  // Use selectedTeam._id
             setNewMemberEmail('');
             setIsAddMemberFormVisible(false);
             fetchTeams();  // Refresh teams list after adding a member
@@ -175,6 +177,43 @@ const TeamManagement = ({ userEmail }) => {
             alert("Error adding member." + error);
         }
     };
+
+    async function checkTeamMembership(teamId, email) {
+        try {
+            // Make the API request to check membership
+            const response = await fetch(`http://localhost:5000/api/teams/${teamId}/isMember`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }) // Send the email in the request body
+            });
+
+            if (!response.ok) {
+                // Handle HTTP error responses (non-200 status codes)
+                const errorData = await response.json();
+                console.error('Error:', errorData.error || errorData.message);
+                return; // Exit if an error occurs
+            }
+
+            // Parse the response data
+            const responseData = await response.json();
+
+            // Check the status of the response to handle different cases
+            if (response.status === 200) {
+                console.log(responseData.message); // 'User is a member of the team'
+            } else if (response.status === 404) {
+                console.log(responseData.message); // 'User is not a member of the team'
+            } else {
+                // Handle any other unexpected response status
+                console.error('Unexpected status:', response.status);
+                console.error('Response data:', responseData);
+            }
+        } catch (error) {
+            // Handle network errors or other unexpected issues
+            console.error('Error during fetch request:', error.message);
+        }
+    }
 
     const deleteMemberFromTeam = async (teamId, memberEmail) => {
         try {
@@ -302,6 +341,10 @@ const TeamManagement = ({ userEmail }) => {
                                 </div>
                             ))}
 
+                            {teams.length === 0 && (
+                                <p className="text-gray-600 mt-4">No teams available. Create one to get started!</p>
+                            )}
+
                             {/* Show members of the selected team */}
                             {selectedTeam && (
                                 <div className="mt-6">
@@ -313,6 +356,7 @@ const TeamManagement = ({ userEmail }) => {
                                                     <span className="text-lg">{member.username}</span>
                                                     <span className="text-base">{member.firstName} {member.lastName}</span>
                                                     <span>{member.email}</span>
+                                                    <span>{member.isActive ? "Active" : "Not Active"}</span>
                                                 </div>
                                                 <div className="flex flex-col justify-center items-center gap-3">
                                                     <span>{member.role}</span>
