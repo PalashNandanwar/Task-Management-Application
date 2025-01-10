@@ -21,23 +21,47 @@ const KanbanBoard = () => {
 
   const onDragEnd = (result) => {
     const { source, destination } = result;
+  
+    // If dropped outside the board, do nothing
     if (!destination) return;
-
+  
+    // If the task is dropped in the same column and position, do nothing
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+  
+    // Get source and destination columns
     const sourceColumn = tasks[source.droppableId];
     const destinationColumn = tasks[destination.droppableId];
-
+  
+    // Make copies of the source and destination columns to avoid mutating state directly
     const sourceTasks = Array.from(sourceColumn);
     const destinationTasks = Array.from(destinationColumn);
-
+  
+    // Remove the task from the source column
     const [movedTask] = sourceTasks.splice(source.index, 1);
-    destinationTasks.splice(destination.index, 0, movedTask);
-
-    setTasks({
-      ...tasks,
-      [source.droppableId]: sourceTasks,
-      [destination.droppableId]: destinationTasks,
-    });
+  
+    // If the task is moved to the same column, reorder within the column
+    if (source.droppableId === destination.droppableId) {
+      sourceTasks.splice(destination.index, 0, movedTask); // Move the task within the same column
+      setTasks({
+        ...tasks,
+        [source.droppableId]: sourceTasks, // Update the column with the reordered tasks
+      });
+    } else {
+      // If the task is moved to a different column, add it to the destination column
+      destinationTasks.splice(destination.index, 0, movedTask);
+      setTasks({
+        ...tasks,
+        [source.droppableId]: sourceTasks, // Update the source column with the task removed
+        [destination.droppableId]: destinationTasks, // Update the destination column with the moved task
+      });
+    }
   };
+  
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
