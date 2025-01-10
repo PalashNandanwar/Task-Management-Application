@@ -6,6 +6,7 @@ import HomeComponent from "./HomeComponent";
 import TaskForm from "./TaskForm"; // Import TaskForm
 import mockData from "../mockData"; // Import mock data
 
+
 const KanbanBoard = () => {
   const [tasks, setTasks] = useState(mockData); // Use mock data
   const [newTask, setNewTask] = useState({
@@ -16,6 +17,7 @@ const KanbanBoard = () => {
     assigned: "",
     status: "todo",
   });
+
 
   const [isAddingTask, setIsAddingTask] = useState(false);
 
@@ -61,6 +63,35 @@ const KanbanBoard = () => {
       });
     }
   };
+
+// handle sub tasks
+const handleAddSubtask = (taskId, subtaskTitle) => {
+  const columnId = Object.keys(tasks).find((columnId) => {
+    const columnIndex = tasks[columnId].findIndex((task) => task.id === taskId);
+    if (columnIndex !== -1) {
+      return true;
+    }
+    return false;
+  });
+
+  if (columnId) {
+    const columnIndex = tasks[columnId].findIndex((task) => task.id === taskId);
+    if (tasks[columnId] && tasks[columnId][columnIndex]) {
+      const newSubtask = {
+        id: uuidv4(),
+        title: subtaskTitle,
+        completed: false,
+      };
+
+      if (!tasks[columnId][columnIndex].subtasks) {
+        tasks[columnId][columnIndex].subtasks = [];
+      }
+
+      tasks[columnId][columnIndex].subtasks.push(newSubtask);
+      setTasks({ ...tasks });
+    }
+  }
+};
   
 
   const handleInputChange = (e) => {
@@ -98,6 +129,24 @@ const KanbanBoard = () => {
       status: "todo",
     });
   };
+  
+  const onDeleteSubtask = (task, index) => {
+    const columnId = Object.keys(tasks).find((columnId) => {
+      const columnIndex = tasks[columnId].findIndex((t) => t.id === task.id);
+      if (columnIndex !== -1) {
+        return true;
+      }
+      return false;
+    });
+  
+    if (columnId) {
+      const columnIndex = tasks[columnId].findIndex((t) => t.id === task.id);
+      const updatedTask = { ...task };
+      updatedTask.subtasks.splice(index, 1);
+      tasks[columnId][columnIndex] = updatedTask;
+      setTasks({ ...tasks });
+    }
+  };
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -127,6 +176,8 @@ const KanbanBoard = () => {
                           task={task}
                           onEdit={(id) => console.log("Edit Task", id)}
                           onDelete={(id) => console.log("Delete Task", id)}
+                          onAddSubtask={(taskId, subtaskTitle) => handleAddSubtask(taskId, subtaskTitle)}
+                          onDeleteSubtask={(task, index) => onDeleteSubtask(task, index)}
                         />
                       </div>
                     )}
