@@ -8,6 +8,13 @@ const TaskForm = ({
   setIsAddingTask,
   newSubtask, setNewSubtask
 }) => {
+
+    const [selectedFile, setSelectedFile] = React.useState(null);
+
+    const handleFileChange = (event) => {
+      setSelectedFile(event.target.files[0]);
+    };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg shadow-md w-96">
@@ -27,18 +34,6 @@ const TaskForm = ({
           onChange={handleInputChange}
           className="w-full p-2 border rounded mb-4"
         />
-        <div className="flex justify-between mb-4">
-          <select
-            name="priority"
-            value={newTask.priority}
-            onChange={handleInputChange}
-            className="w-full p-2 border rounded"
-          >
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-        </div>
         <input
           type="date"
           name="deadline"
@@ -52,6 +47,12 @@ const TaskForm = ({
           placeholder="Assigned To"
           value={newTask.assigned}
           onChange={handleInputChange}
+          className="w-full p-2 border rounded mb-4"
+        />
+        <input
+          type="file"
+          name="attachment"
+          onChange={handleFileChange}
           className="w-full p-2 border rounded mb-4"
         />
         <div className="flex justify-end space-x-2">
