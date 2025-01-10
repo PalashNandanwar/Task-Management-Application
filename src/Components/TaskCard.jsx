@@ -25,11 +25,6 @@ const TaskCard = ({ task, onEdit, onDelete, onAddSubtask, onDeleteSubtask }) => 
       {/* Priority & Deadline */}
       <div className="flex items-center justify-between mt-4">
         <span
-          className={`text-sm font-semibold text-white px-3 py-1 rounded ${priorityColors[task.priority]}`}
-        >
-          {task.priority}
-        </span>
-        <span
           className={`text-sm font-medium ${
             new Date(task.deadline) < new Date() ? "text-red-500" : "text-gray-500"
           }`}
@@ -43,10 +38,26 @@ const TaskCard = ({ task, onEdit, onDelete, onAddSubtask, onDeleteSubtask }) => 
         Assigned to: <span className="font-medium text-gray-700">{task.assigned}</span>
       </p>
 
+     {/* Attachment */}
+     {task.attachment && (
+        <div className="mt-4">
+          <h4 className="text-lg font-semibold">Attachment</h4>
+          <a href={URL.createObjectURL(task.attachment)} download={task.attachment.name}>
+            <div className="flex justify-between p-4 rounded-lg shadow-md w-60">
+              <h5 className="text-lg font-semibold">{task.attachment.name}</h5>
+              <button
+                className="text-blue-500 hover:text-blue-700"
+              >
+                Download
+              </button>
+            </div>
+          </a>
+        </div>
+      )}
+
       {/* Subtasks */}
       {Array.isArray(task.subtasks) && task.subtasks.length > 0 && (
         <div className="mt-4">
-          <h4 className="text-lg font-semibold">Subtasks</h4>
           <div className="grid grid-cols-1 gap-4">
   {task.subtasks.map((subtask, index) => (
     <div
